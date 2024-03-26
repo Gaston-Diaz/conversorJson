@@ -1,0 +1,67 @@
+import PySimpleGUI as sg
+import pandas as pd
+import json
+import os
+
+def convertir_json_a_excel(archivo_json, archivo_excel):
+    # Leer el archivo JSON
+    with open(archivo_json, 'r') as f:
+        datos_json = json.load(f)
+    
+    # Crear un DataFrame de pandas desde los datos JSON
+    df = pd.DataFrame(datos_json)
+    
+    # Escribir el DataFrame en un archivo Excel
+    df.to_excel(archivo_excel, index=False)
+
+def convertir_excel_a_json(archivo_excel, archivo_json):
+    # Leer el archivo Excel
+    df = pd.read_excel(archivo_excel)
+    
+    # Convertir el DataFrame a un diccionario
+    datos_json = df.to_dict(orient='records')
+    
+    # Escribir el diccionario en un archivo JSON
+    with open(archivo_json, 'w') as f:
+        json.dump(datos_json, f, indent=4)
+
+# Función para crear la carpeta si no existe
+def crear_carpeta_si_no_existe(carpeta):
+    if not os.path.exists(carpeta):
+        os.makedirs(carpeta)
+
+# Definir el diseño de la interfaz de usuario
+layout = [
+    [sg.Text('Seleccione un archivo JSON:')],
+    [sg.InputText(key='-ARCHIVO_JSON-'), sg.FileBrowse(file_types=(("JSON Files", "*.json"),))],
+    [sg.Button('Convertir a Excel')],
+    [sg.Text('Seleccione un archivo Excel:')],
+    [sg.InputText(key='-ARCHIVO_EXCEL-'), sg.FileBrowse(file_types=(("Excel Files", "*.xlsx"),))],
+    [sg.Button('Convertir a JSON'), sg.Button('Salir')]
+]
+
+# Crear la ventana de la aplicación
+window = sg.Window('Convertir entre JSON y Excel', layout)
+
+# Bucle principal de eventos
+while True:
+    event, values = window.read()
+    if event == sg.WINDOW_CLOSED or event == 'Salir':
+        break
+    elif event == 'Convertir a Excel':
+        archivo_json = values['-ARCHIVO_JSON-']
+        if archivo_json:
+            archivo_excel = os.path.splitext(archivo_json)[0] + '.xlsx'
+            crear_carpeta_si_no_existe('output')
+            convertir_json_a_excel(archivo_json, os.path.join('output', archivo_excel))
+            sg.popup(f'Se ha convertido "{archivo_json}" a "{archivo_excel}"')
+    elif event == 'Convertir a JSON':
+        archivo_excel = values['-ARCHIVO_EXCEL-']
+        if archivo_excel:
+            archivo_json = os.path.splitext(archivo_excel)[0] + '.json'
+            crear_carpeta_si_no_existe('output')
+            convertir_excel_a_json(archivo_excel, os.path.join('output', archivo_json))
+            sg.popup(f'Se ha convertido "{archivo_excel}" a "{archivo_json}"')
+
+# Cerrar la ventana
+window.close()
